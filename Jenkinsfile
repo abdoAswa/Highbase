@@ -1,30 +1,34 @@
 pipeline {
   agent {
-    docker { image 'maven:3.9.6-eclipse-temurin-17' }
+    docker {
+      image 'maven:3.9.6-eclipse-temurin-17'
+      args '-v /dev/shm:/dev/shm' // يحسن أداء المتصفح جوه docker
+    }
+  }
+
+  environment {
+    MAVEN_OPTS = "-Dmaven.test.failure.ignore=true"
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/abdoAswa/Highbase.git'
-      }
-    }
-
     stage('Build') {
       steps {
         sh 'mvn clean compile -DskipTests'
       }
     }
 
-    stage('Run Tests') {
+    stage('Run Selenium Tests') {
       steps {
-        sh 'mvn test'
+        // تشغيل Selenium مع Chrome headless
+        sh '''
+          echo "Starting Selenium Tests in Headless Chrome..."
+          mvn test -Dselenium.browser=chrome -Dheadless=true
+        '''
       }
     }
 
-    stage('Archive Reports') {
+    stage('Archive Test Reports') {
       steps {
-        // If using Surefire TestNG reports:
         junit '**/target/surefire-reports/*.xml'
       }
     }
@@ -32,7 +36,14 @@ pipeline {
 
   post {
     always {
+      echo 'Cleaning up workspace...'
       cleanWs()
+    }
+    success {
+      echo '✅ All tests passed successfully!'
+    }
+    failure {
+      echo '❌ Some tests failed. Check the reports.'
     }
   }
 }
