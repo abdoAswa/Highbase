@@ -1,0 +1,50 @@
+pipeline {
+    agent {
+        docker { image 'maven:3.9.6-eclipse-temurin-17' }
+    }
+
+    environment {
+        // لو فيه متغيرات لازم تتغير
+        // JAVA_HOME = "/usr/lib/jvm/java-17-openjdk"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/abdoAswa/Highbase.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean compile -DskipTests'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Archive Results') {
+            steps {
+                // ممكن تحفظ تقارير، لو عندك مثلاً Surefire report أو غيرها
+                junit '**/target/surefire-reports/*.xml'
+            }
+        }
+    }
+
+    post {
+        always {
+            // نظّف أي ملفات مؤقتة
+            cleanWs()
+        }
+        success {
+            echo 'Tests passed!'
+        }
+        failure {
+            echo 'Something failed. Check logs!'
+        }
+    }
+}
