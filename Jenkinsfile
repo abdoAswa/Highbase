@@ -1,15 +1,9 @@
 pipeline {
     agent any
     
-    tools {
-        // Use the JDK you configured earlier
-        jdk 'JDK-17' // Change this to match your JDK name
-    }
-    
     environment {
-        // Set Maven path if not in system PATH
-        MAVEN_HOME = tool 'Maven' // Configure Maven in Global Tools first
-        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
+        // Use system Java and Maven
+        JAVA_HOME = "${env.JAVA_HOME}"
     }
     
     stages {
@@ -33,29 +27,6 @@ pipeline {
             }
         }
         
-        stage('Setup Browser') {
-            steps {
-                echo 'Setting up browser drivers...'
-                script {
-                    if (isUnix()) {
-                        // Download ChromeDriver for Linux
-                        sh '''
-                            wget -O chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip
-                            unzip chromedriver.zip
-                            chmod +x chromedriver
-                            sudo mv chromedriver /usr/local/bin/
-                        '''
-                    } else {
-                        // For Windows - adjust path as needed
-                        bat '''
-                            curl -o chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_win32.zip
-                            powershell Expand-Archive chromedriver.zip -DestinationPath .
-                        '''
-                    }
-                }
-            }
-        }
-        
         stage('Run Tests') {
             steps {
                 echo 'Running Selenium tests...'
@@ -74,7 +45,7 @@ pipeline {
         always {
             echo 'Cleaning up...'
             // Archive test results
-            publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+            junit testResultsPattern: 'target/surefire-reports/*.xml', allowEmptyResults: true
             
             // Archive screenshots if they exist
             archiveArtifacts artifacts: 'screenshots/**/*.png', allowEmptyArchive: true
