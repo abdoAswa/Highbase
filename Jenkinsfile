@@ -1,49 +1,95 @@
 pipeline {
-  agent {
-    docker {
-      image 'maven:3.9.6-eclipse-temurin-17'
-      args '-v /dev/shm:/dev/shm' // يحسن أداء المتصفح جوه docker
+    agent any
+    
+    tools {
+        // Use the JDK you configured earlier
+        jdk 'JDK-11' // Change this to match your JDK name
     }
-  }
-
-  environment {
-    MAVEN_OPTS = "-Dmaven.test.failure.ignore=true"
-  }
-
-  stages {
-    stage('Build') {
-      steps {
-        sh 'mvn clean compile -DskipTests'
-      }
+    
+    environment {
+        // Set Maven path if not in system PATH
+        MAVEN_HOME = tool 'Maven' // Configure Maven in Global Tools first
+        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
     }
-
-    stage('Run Selenium Tests') {
-      steps {
-        // تشغيل Selenium مع Chrome headless
-        sh '''
-          echo "Starting Selenium Tests in Headless Chrome..."
-          mvn test -Dselenium.browser=chrome -Dheadless=true
-        '''
-      }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code from GitHub...'
+                checkout scm
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                echo 'Building the project...'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn clean compile'
+                    } else {
+                        bat 'mvn clean compile'
+                    }
+                }
+            }
+        }
+        
+        stage('Setup Browser') {
+            steps {
+                echo 'Setting up browser drivers...'
+                script {
+                    if (isUnix()) {
+                        // Download ChromeDriver for Linux
+                        sh '''
+                            wget -O chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip
+                            unzip chromedriver.zip
+                            chmod +x chromedriver
+                            sudo mv chromedriver /usr/local/bin/
+                        '''
+                    } else {
+                        // For Windows - adjust path as needed
+                        bat '''
+                            curl -o chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_win32.zip
+                            powershell Expand-Archive chromedriver.zip -DestinationPath .
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                echo 'Running Selenium tests...'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn test -Dheadless=true'
+                    } else {
+                        bat 'mvn test -Dheadless=true'
+                    }
+                }
+            }
+        }
     }
-
-    stage('Archive Test Reports') {
-      steps {
-        junit '**/target/surefire-reports/*.xml'
-      }
+    
+    post {
+        always {
+            echo 'Cleaning up...'
+            // Archive test results
+            publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+            
+            // Archive screenshots if they exist
+            archiveArtifacts artifacts: 'screenshots/**/*.png', allowEmptyArchive: true
+            
+            // Clean workspace
+            cleanWs()
+        }
+        
+        success {
+            echo 'Tests passed successfully!'
+        }
+        
+        failure {
+            echo 'Tests failed!'
+            // Send notifications here if needed
+        }
     }
-  }
-
-  post {
-    always {
-      echo 'Cleaning up workspace...'
-      cleanWs()
-    }
-    success {
-      echo '✅ All tests passed successfully!'
-    }
-    failure {
-      echo '❌ Some tests failed. Check the reports.'
-    }
-  }
 }
