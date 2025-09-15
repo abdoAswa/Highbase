@@ -3,7 +3,7 @@ pipeline {
     
     tools {
         // Use the JDK you configured earlier
-        jdk 'JDK-11' // Change this to match your JDK name
+        jdk 'JDK-17' // Change this to match your JDK name
     }
     
     environment {
