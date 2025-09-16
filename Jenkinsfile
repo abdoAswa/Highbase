@@ -45,7 +45,7 @@ pipeline {
         always {
             echo 'Cleaning up...'
             // Archive test results
-            junit testResultsPattern: 'target/surefire-reports/*.xml', allowEmptyResults: true
+            junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
             
             // Archive screenshots if they exist
             archiveArtifacts artifacts: 'screenshots/**/*.png', allowEmptyArchive: true
