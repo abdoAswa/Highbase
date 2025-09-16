@@ -19,7 +19,7 @@ pipeline {
                 echo 'Building the project...'
                 script {
                     if (isUnix()) {
-                        sh 'mvn clean compile'
+                        sh '/usr/local/bin/mvn clean compile'
                     } else {
                         bat 'mvn clean compile'
                     }
@@ -32,7 +32,7 @@ pipeline {
                 echo 'Running Selenium tests...'
                 script {
                     if (isUnix()) {
-                        sh 'mvn test -Dheadless=true'
+                        sh '/usr/local/bin/mvn test -Dheadless=true'
                     } else {
                         bat 'mvn test -Dheadless=true'
                     }
