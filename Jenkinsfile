@@ -19,7 +19,10 @@ pipeline {
                 echo 'Building the project...'
                 script {
                     if (isUnix()) {
-                        sh '/usr/local/bin/mvn clean compile'
+                        sh '''
+                            export JAVA_HOME=/usr/local/Cellar/openjdk/24.0.2/libexec/openjdk.jdk/Contents/Home
+                            /usr/local/bin/mvn clean compile
+                        '''
                     } else {
                         bat 'mvn clean compile'
                     }
@@ -32,7 +35,10 @@ pipeline {
                 echo 'Running Selenium tests...'
                 script {
                     if (isUnix()) {
-                        sh '/usr/local/bin/mvn test -Dheadless=true'
+                        sh '''
+                            export JAVA_HOME=/usr/local/Cellar/openjdk/24.0.2/libexec/openjdk.jdk/Contents/Home
+                            /usr/local/bin/mvn test -Dheadless=true
+                        '''
                     } else {
                         bat 'mvn test -Dheadless=true'
                     }
